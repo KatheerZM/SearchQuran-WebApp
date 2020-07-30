@@ -1,0 +1,46 @@
+﻿################
+# Instructions #
+################
+
+Welcome to the Quran Search. These are some instructions for use.
+
+In essence, the search engine is in Arabic. It only searches the Arabic text of the Quran. However, there is a built in English-letters-to-Arabic converter for ease of use. It is NOT a translation, only a type of transliteration from e.g. 'b' to ب.
+
+# Conversion #
+Some simple examples of the letter conversion are "kitaab" to كِتَاب and "raiba" to رَيْبَ. A list of the non-obvious conversions is given below:
+- The word "Allah" converts to the word اللَّه, and lillah is لِلَّه
+- al- is a quick الْ, as in al-qamar (الْقَمَر)
+- th becomes ث
+- H becomes ح, and h becomes ه
+- kh becomes خ
+- z becomes ذ, and Z becomes ز
+- s becomes س, and S becomes ص
+- dh becomes ض
+- T becomes ط
+- zh becomes ظ
+- ' becomes ع
+- gh becomes غ
+- q becomes ق
+- v or w for و
+- N and n both usually become ن, but sometimes n might be confused with tanween.
+- Capital vowels can be used for any type of hamza like أ or ء or ئ or ؤ. The search engine treats all hamzas the same. Depending on the diacritic on it, the letters A, I, and O can be used. For elongation, Aa, Ee, and Oo. For tanween, An, In, and so on.
+- For a hamza alone without diacritics, a lone e can be used.
+
+The rest of the letters correspond to their obvious letter in lower case. For example, r becomes ر. For shaddah, repeat the letter twice.
+
+For diacritics (fathah, dhammah, zabar, pesh, etc.):
+- a for fathah, and aa for fathah with an ا after it. Note that the ى like in مُوسَى is treated the same as an ا since they act the same. So, to search for مُوسَى, you can type moosaa.
+- i for kasrah, and ee for kasrah with a ي after it
+- u or o for dhammah, and oo for dhammah with a و after it
+- . is sukoon. Don't forget the sukoon! The search muslimoon will give no results, but mus.limoon will give results.
+- For a hamza with a sukoon on it, a sukoon can be added in front of the above diacritics. For example, ba.san gives بَأْسً.
+- ai and ao can also be used
+- For tanween: an, in, and on can be used
+
+# Features #
+- You can search phrases by using spaces in between. For example, laa raiba (لَا رَيْبَ) can searched for.
+- You can search for verses that include two different words/phrases without any specific order using &. For example, laa raiba & mottaqeen (لَا رَيْبَ & مُتَّقِين). This search will give all verses that both include the phrase لَا رَيْبَ and also include (not necessarily after or before) مُتَّقِين.
+- You can make multiple searches using ;. For example, if you search "laa raiba & mottaqeen; haaroon", you will both get the aforementioned verses of laa raiba & mottaqeen but also any verses that include haaroon
+- You can quickly write multiple searches using [A,B,C, etc]. This is when you have multiple options of what can be in a specific place. For example, if you wanted to search for both rabba and rabbo, you can write it as rabb[a,o]. The brackets don't necessarily need to be at the end. You can have multiple options in the middle of a word.
+- You can use the root of a word to search instead of the word itself using commas: A,B,C. Knowing that the root of mottaqeen is وقي, you can search for all words with that root using v,q,y.
+- All the above features are intercombinable!
