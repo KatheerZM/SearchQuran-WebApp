@@ -5,6 +5,32 @@ using System.Threading.Tasks;
 
 namespace MyFirstOouiApp
 {
+    public class SResult
+    {
+        public int surah, ayah; public string word;
+        public SResult(int s, int v, string w)
+        {
+            surah = s;
+            ayah = v;
+            word = w;
+        }
+        public override string ToString()
+        {
+            return surah.ToString() + ":" + ayah.ToString();
+        }
+        public static bool operator ==(SResult s1, SResult s2)
+        {
+            if (s1.surah == s2.surah && s1.ayah == s2.ayah && s1.word == s2.word)
+            {
+                return true;
+            }
+            else return false;
+        }
+        public static bool operator !=(SResult s1, SResult s2)
+        {
+            return !(s1 == s2);
+        }
+    }
     public class Search
     {
         Term[] terms;
@@ -28,7 +54,6 @@ namespace MyFirstOouiApp
         {
             bool match = false;
             string matching = "";
-
             foreach (Term term in terms)
             {
                 var result = term.Match(verse, roots, tran);
@@ -38,15 +63,54 @@ namespace MyFirstOouiApp
                     matching += " ; " + result.actual;
                 }
             }
+            if (match) return (true, matching.Substring(3));
+            else return (false, "");
+        }
+        public (SResult[] sResult, StatContent[] statContent) Matches(string[][] surahs, string[][] roots, string[][] tran, int smin, int smax)
+        {
+            List<SResult> sr = new List<SResult>();
+            StatContent[] sc = new StatContent[terms.Length];
+            for (int i = 0; i < sc.Length; i++)
+            {
+                sc[i] = new StatContent(terms[i].statType);
+                sc[i].term = terms[i].ToString();
+            }
+            for (int s = smin; s <= smax; s++)
+            {
+                bool[] surahfound = new bool[terms.Length];
+                for (int i = 0; i < surahfound.Length; i++) surahfound[i] = false;
 
-            if (match)
-            {
-                return (true, matching.Substring(3));
+                for (int v = 0; v < surahs[s].Length - 1; v++)
+                {
+                    bool match = false;
+                    string matching = "";
+                    for (int t = 0; t < terms.Length; t++)
+                    {
+                        Term term = terms[t];
+                        var result = term.Match(surahs[s][v], roots[s][v], tran[s][v]);
+                        if (result.isMatch)
+                        {
+                            match = true;
+                            matching += " ; " + result.actual;
+                            surahfound[t] = true;
+                            sc[t] += result.stats;
+                        }
+                    }
+                    if (match)
+                    {
+                        sr.Add(new SResult(s, v, matching.Substring(3)));
+                    }
+                }
+
+                for (int i = 0; i < surahfound.Length; i++)
+                {
+                    if (surahfound[i])
+                    {
+                        sc[i].surahs++;
+                    }
+                }
             }
-            else
-            {
-                return (false, "");
-            }
+            return (sr.ToArray(), sc);
         }
         public bool isEmpty ()
         {
@@ -68,6 +132,7 @@ namespace MyFirstOouiApp
     {
         bool include;
         Phrase[] phrases;
+        public StatType statType;
         public Term (string term)
         {
             if (term.Length >= 3 && term.Substring(0, 3) == "-_ ")
@@ -91,11 +156,44 @@ namespace MyFirstOouiApp
                     phraseList.RemoveAt(i) ;
             }
             phrases = phraseList.ToArray();
+
+            if (phrases.Length == 0) ;
+            else if (phrases.Length > 1 || !phrases[0].include || !include)
+            {
+                setStatTypes(StatType.Verse);
+                statType = StatType.Verse;
+            }
+            else if (!phrases[0].isLoneWord())
+            {
+                setStatTypes(StatType.PhraseWord);
+                statType = StatType.PhraseWord;
+            }
+            else if (!phrases[0].first.isSubwordType())
+            {
+                setStatTypes(StatType.PhraseWord);
+                statType = StatType.PhraseWord;
+            }
+            else
+            {
+                setStatTypes(StatType.SubWord);
+                statType = StatType.SubWord;
+            }
+
+            
         }
-        public (bool isMatch, string actual) Match(string verse, string roots, string tran)
+        public void setStatTypes(StatType st)
+        {
+            statType = st;
+            for (int i = 0; i < phrases.Length; i++)
+                phrases[i].setStatTypes(st);
+        }
+        public (bool isMatch, string actual, StatContent stats) Match(string verse, string roots, string tran)
         {
             bool match = true;
             string matching = "";
+            StatContent sc = new StatContent(statType);
+
+            
 
             foreach (Phrase phrase in phrases)
             {
@@ -103,6 +201,10 @@ namespace MyFirstOouiApp
                 if (result.isMatch)
                 {
                     matching += " & " + result.actual;
+                    if (statType > StatType.Verse)
+                    {
+                        sc += result.stats;
+                    }
                 }
                 else match = false;
             }
@@ -111,11 +213,16 @@ namespace MyFirstOouiApp
             else if (!include) matching = "";
             if (matching != "") matching = matching.Substring(3);
 
+            if (match == include)
+            {
+                sc.verses += 1;
+            }
+
             //              Match   No Match
             //Include       True    False
             //No Include    False   True
 
-            return (match == include, matching);
+            return (match == include, matching, sc);
         }
         public bool isEmpty ()
         {
@@ -138,7 +245,8 @@ namespace MyFirstOouiApp
     class Phrase
     {
         PhraseType type;
-        bool include;
+        public bool include;
+        StatType statType;
         Word[] words;
         public Phrase (string phrase)
         {
@@ -175,41 +283,55 @@ namespace MyFirstOouiApp
             }
             return phrase;
         }
-
-        public (bool isMatch, string actual) Match(string verse, string roots, string tran)
+        public (bool isMatch, string actual, StatContent stats) Match(string verse, string roots, string tran)
         {
             if (type == PhraseType.Arabic)
                 return Match(verse, roots);
             else if (type == PhraseType.English)
                 return Match(tran);
-            else return (false, "ERROR");
+            else return (false, "ERROR", new StatContent(StatType.PhraseWord));
         }
-
         //Assumes type is Arabic
-        (bool isMatch, string actual) Match(string verse, string roots)
+        (bool isMatch, string actual, StatContent stats) Match(string verse, string roots)
         {
             string[] vwords = verse.Split(" ");
             string[] rwords = roots.Split(" ");
+            StatContent sc = new StatContent(statType);
 
             List<int> starters = new List<int>();
             for (int i = 0; i < vwords.Length; i++)
             {
-                if (words[0].Match(vwords[i], rwords[i]))
+                if (words[0].Match(vwords[i], rwords[i]).isMatch)
                     starters.Add(i);
             }
-
+            starters.Reverse();
             bool match = false;
             string matching = "";
             foreach (int s in starters)
             {
+                matching = "";
                 for (int i = s; i < vwords.Length; i++)
                 {
-                    if (words[i - s].Match(vwords[i], rwords[i]))
+                    var result = words[i - s].Match(vwords[i], rwords[i]);
+                    if (result.isMatch)
                     {
                         matching += vwords[i] + " ";
                         if (i - s == words.Length - 1)
                         {
                             match = true;
+                            if (statType == StatType.Verse)
+                            {
+
+                            }
+                            else if (statType == StatType.PhraseWord)
+                            {
+                                sc.phrases++;
+                            }
+                            else
+                            {
+                                sc.phrases++;
+                                sc += result.stats;
+                            }
                             break;
                         }
                     }
@@ -219,7 +341,6 @@ namespace MyFirstOouiApp
                         break;
                     }
                 }
-                if (match) break;
             }
 
             if (!match) matching = "";
@@ -230,17 +351,18 @@ namespace MyFirstOouiApp
             //Include       True    False
             //No Include    False   True
 
-            return (match == include, matching);
+            return (match == include, matching, sc);
         }
         //Assumes type is English
-        (bool isMatch, string actual) Match (string tran)
+        (bool isMatch, string actual, StatContent stats) Match (string tran)
         {
             string[] twords = tran.Split(" ");
+            StatContent sc = new StatContent(statType);
 
             List<int> starters = new List<int>();
             for (int i = 0; i < twords.Length; i++)
             {
-                if (words[0].Match(twords[i], ""))
+                if (words[0].Match(twords[i], "").isMatch)
                     starters.Add(i);
             }
 
@@ -250,12 +372,26 @@ namespace MyFirstOouiApp
             {
                 for (int i = s; i < twords.Length; i++)
                 {
-                    if (words[i - s].Match(twords[i], ""))
+                    var result = words[i - s].Match(twords[i], "");
+                    if (result.isMatch)
                     {
                         matching += twords[i] + " ";
                         if (i - s == words.Length - 1)
                         {
                             match = true;
+                            sc += result.stats;
+                            if (statType == StatType.Verse)
+                            {
+
+                            }
+                            else if (statType == StatType.PhraseWord)
+                            {
+                                sc.phrases++;
+                            }
+                            else
+                            {
+                                sc += result.stats;
+                            }
                             break;
                         }
                     }
@@ -275,11 +411,13 @@ namespace MyFirstOouiApp
             //Include       True    False
             //No Include    False   True
 
-            return (match == include, matching);
+            return (match == include, matching, sc);
         }
-        public (int count, CountType countType) Count (string verse, string roots, string tran)
+        public void setStatTypes(StatType st)
         {
-            return (1, CountType.Phrase);
+            statType = st;
+            for (int i = 0; i < words.Length; i++)
+                words[i].setStatTypes(st);
         }
         public bool isEmpty()
         {
@@ -303,6 +441,21 @@ namespace MyFirstOouiApp
                 return joined.Substring(1);
             }
         }
+        public bool isLoneWord()
+        {
+            if (words.Length == 1)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public Word first
+        {
+            get { return words[0]; }
+        }
     }
     enum WordType { Arabic, English}
     class Word
@@ -310,6 +463,7 @@ namespace MyFirstOouiApp
         WordType type;
         bool include;
         WordReq[] reqs;
+        StatType statType;
         public Word (string rs, bool english)
         {
             if (rs.Length >= 2 && rs.Substring(0, 2) == "-_")
@@ -328,18 +482,70 @@ namespace MyFirstOouiApp
             }
             reqs = reqList.ToArray();
         }
-        public bool Match (string word, string root)
+        public (bool isMatch, StatContent stats) Match (string word, string root)
         {
+            StatContent sc = new StatContent(statType);
+            bool match = false;
             foreach (WordReq wr in reqs)
             {
                 if (type == WordType.Arabic)
-                    if (wr.Match(word, root) == false) return !include;
+                {
+                    var result = wr.Match(word, root);
+                    if (result.isMatch == false)
+                    {
+                        return (!include, sc);
+                    }
+                    else
+                    {
+                        if (statType == StatType.Verse)
+                        {
+
+                        }
+                        else if (statType == StatType.PhraseWord)
+                        {
+
+                        }
+                        else
+                        {
+                            sc += result.stats;
+                        }
+                        match = true;
+                    }
+                }
                 else if (type == WordType.English)
-                    if (wr.Match(word) == false) return !include;
+                {
+                    var result = wr.Match(word);
+                    if (result.isMatch == false)
+                    {
+                        return (!include, sc);
+                    }
+                    else
+                    {
+                        if (statType == StatType.Verse)
+                        {
+
+                        }
+                        else if (statType == StatType.PhraseWord)
+                        {
+
+                        }
+                        else
+                        {
+                            sc += result.stats;
+                        }
+                        match = true;
+                    }
+                }
             }
-            return include;
+            return (include, sc);
         }
-        public (int count, CountType countType) Count (string word, string root)
+        public void setStatTypes(StatType st)
+        {
+            statType = st;
+            for (int i = 0; i < reqs.Length; i++)
+                reqs[i].setStatTypes(st);
+        }
+        /*public (int count, CountType countType) Count (string word, string root)
         {
             if (reqs.Length == 1 && reqs[0].getType() != WordReqType.Root && include)
             {
@@ -356,7 +562,7 @@ namespace MyFirstOouiApp
                     return (0, CountType.Word);
                 }
             }
-        }
+        }*/
         public bool isEmpty ()
         {
             return reqs.Length == 0;
@@ -370,14 +576,34 @@ namespace MyFirstOouiApp
             }
             return joined.Substring(1);
         }
+        public bool isSubwordType()
+        {
+            if (reqs.Length > 1)
+            {
+                return false;
+            }
+            else if (reqs[0].getType() == WordReqType.Root)
+            {
+                return false;
+            }
+            else if (!reqs[0].include)
+            {
+                return false;
+            }
+            else if (!include)
+            {
+                return false;
+            }
+            else return true;
+        }
     }
     enum WordReqType { Arabic, English, Root }
-    enum CountType { SubWord, Word, Phrase, Verse}
     class WordReq
     {
         WordReqType type;
-        bool include;
+        public bool include;
         string req;
+        StatType statType;
         public WordReq(string r, bool english)
         {
             if (r.Length >= 1 && r.ToCharArray()[0] == '-')
@@ -401,43 +627,49 @@ namespace MyFirstOouiApp
                 else type = WordReqType.Arabic;
             }
         }
-        public bool Match (string word, string root)
+        public (bool isMatch, StatContent stats) Match (string word, string root)
         {
             word = dealSpecialLetters(word);
             root = dealSpecialLetters(root);
+            StatContent sc = new StatContent(statType);
             word = "~" + word + "~";
             if (type == WordReqType.Arabic)
             {
+                if (statType == StatType.SubWord) sc.subwords += Count(word);
                 //int cnt = (word.Length - word.Replace(req, "").Count()) / req.Length;
                 if (word.Contains(req))
-                    return (include);
-                else return (!include);
+                    return (include, sc);
+                else return (!include, sc);
             }
             else if (type == WordReqType.English)
             {
+                if (statType == StatType.SubWord) sc.subwords += Count(word);
                 //int cnt = (word.Length - word.Replace(req, "").Count()) / req.Length;
                 if (word.Contains(req))
-                    return include;
-                else return !include;
+                    return (include, sc);
+                else return (!include, sc);
             }
             else if (type == WordReqType.Root)
             {
                 if (root == req.Replace(",", ""))
-                    return include;
-                else return !include;
+                    return (include, sc);
+                else return (!include, sc);
             }
-            else return false;
+            else return (false, sc);
         }
-        public bool Match(string word)
+        public (bool isMatch, StatContent stats) Match(string word)
         {
             word = word = "~" + word + "~";
+            StatContent sc = new StatContent(statType);
+            
             if (type == WordReqType.English)
             {
+                if (statType == StatType.SubWord) sc.subwords += Count(word);
                 if (word.Contains(req) || word == "*")
-                    return include;
-                else return !include;
+                    return (include, sc);
+                else return (!include, sc);
             }
-            else return false;
+            else return (false, sc);
         }
         public int Count (string word)
         {
@@ -446,6 +678,10 @@ namespace MyFirstOouiApp
         public bool isEmpty ()
         {
             return req.Trim() == "";
+        }
+        public void setStatTypes(StatType st)
+        {
+            statType = st;
         }
         string arabify(string term)
         {
@@ -656,6 +892,10 @@ namespace MyFirstOouiApp
         }
     }
 
+    public enum StatType
+    { 
+        Verse, PhraseWord, SubWord
+    }
     class VerseStat
     {
         public int surahs, verses;
@@ -668,12 +908,80 @@ namespace MyFirstOouiApp
     {
         public int subwords;
     }
+    public class StatContent
+    {
+        public int[] stats;
+        public string term;
+        public int length
+        {
+            get { return stats.Length; }
+        }
+        StatType stattype;
+        public int surahs
+        {
+            get { return stats[0]; }
+            set { stats[0] = value; }
+        }
+        public int verses
+        {
+            get { return stats[1]; }
+            set { stats[1] = value; }
+        }
+        public int phrases
+        {
+            get { return stats[2]; }
+            set { stats[2] = value; }
+        }
+        public int subwords
+        {
+            get { return stats[3]; }
+            set { stats[3] = value; }
+        }
+        public StatContent (StatType st)
+        {
+            stattype = st;
+            stats = new int[2 + (int)stattype];
+            for (int i = 0; i < length; i++)
+                stats[i] = 0;
+        }
+        public static StatContent operator + (StatContent s1, StatContent s2)
+        {
+            return s1.Add(s2);
+        }
+        StatContent Add (StatContent other)
+        {
+            for (int i = 1; i < length || i < other.length; i++)
+            {
+                stats[i] += other.stats[i];
+            }
+            return this;
+        }
+        public override string ToString()
+        {
+            if (stattype == StatType.Verse)
+            {
+                return "The search term " + term + " matches " + str(verses) + " verses and " + str(surahs) + " surahs.";
+            }
+            else if (stattype == StatType.PhraseWord)
+            {
+                return "The search term " + term + " appears " + str(phrases) + " times in " + str(verses) + " verses and " + str(surahs) + " surahs.";
+            }
+            else 
+            {
+                return "The search term " + term + " appears " + str(subwords) + " times in " + str(phrases) + " words and " + str(verses) + " verses and " + str(surahs) + " surahs.";
+            }
+        }
+        string str (int i)
+        {
+            return i.ToString();
+        }
+    }
     class Test
     {
         void test1()
         {
             VerseStat vstat = new SubWordStat();
-            ///test2(new SubWordStat());
+            //test2(new SubWordStat());
             
         }
         void test2 ()

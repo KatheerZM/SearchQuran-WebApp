@@ -486,8 +486,8 @@ namespace MyFirstOouiApp.Pages
             if (b == 0) return true;
             else return false;
         }
-        Stat[] statslist = new Stat[0];
-        SResult[] lookup(string[] terms)
+        //Stat[] statslist = new Stat[0];
+        /*SResult[] lookup(string[] terms)
         {
             terms = Ligase(terms);
             int min, max;
@@ -558,7 +558,7 @@ namespace MyFirstOouiApp.Pages
             }
             statslist = statresults.ToArray();
             return results.ToArray();
-        }
+        }*/
         bool shouldCheck (string term, string verse, int s, int v)
         {
             string word = term.Trim().Split('&')[0].Trim().Split(' ')[0];
@@ -779,18 +779,33 @@ namespace MyFirstOouiApp.Pages
             {
                 quick = true;
             }
+            int min, max;
+            if (sstart <= send)
+            {
+                min = sstart;
+                max = send;
+            }
+            else
+            {
+                min = send;
+                max = sstart;
+            }
 
             //search = arabifyIgnoringEng(debrack(search));
             //SResult[] finds = lookup(search.Split(';'));
-            SResult[] finds = lookup2(searchTerm);
+            var results = searchTerm.Matches(surahs, rsurahs, tsurahs, min, max);
+            SResult[] finds = results.sResult;
+            StatContent[] allStats = results.statContent;
+
+            //SResult[] finds = lookup2(searchTerm);
             occurText = "";
             statsText = "";
 
-            finds = Ligase(finds);
+            //finds = Ligase(finds);
 
-            for (int i = 0; i < statslist.Length; i++)
+            for (int i = 0; i < allStats.Length; i++)
             {
-                statsText += statslist[i].ToString() + "\n";
+                statsText += allStats[i].ToString() + "\n";
             }
 
             

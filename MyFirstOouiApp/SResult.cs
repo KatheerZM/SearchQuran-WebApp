@@ -5,21 +5,8 @@ using System.Threading.Tasks;
 
 namespace MyFirstOouiApp
 {
-    public class SResult
-    {
-        public int surah, ayah; public string word;
-        public SResult(int s, int v, string w)
-        {
-            surah = s;
-            ayah = v;
-            word = w;
-        }
-        public override string ToString()
-        {
-            return surah.ToString() + ":" + ayah.ToString();
-        }
-    }
-    public class Stat
+    
+    /*public class Stat
     {
         public StatType type;
         public string word;
@@ -60,13 +47,6 @@ namespace MyFirstOouiApp
             }
             return "Error in Code: Wrong Statistics Type.";
         }
-    }
-    public enum StatType
-    {
-        SubWord,
-        CountAndVerse,
-        OnlyVerse,
-        Root,
-        RootAndPhrase
-    }
+    }*/
+    
 }
