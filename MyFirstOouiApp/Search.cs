@@ -232,13 +232,15 @@ namespace MyFirstOouiApp
         {
             string RTLMark = "\u200F";
             string LTRMark = "\u200E";
+            string sign = "";
+            if (!include) sign = "-_ ";
             string joined = "";
             if (isEmpty()) return "";
             foreach (Phrase p in phrases)
             {
                 joined += " " + LTRMark + "& " + p.ToString();
             }
-            return RTLMark + joined.Substring(3);
+            return RTLMark + sign + joined.Substring(3);
         }
     }
     enum PhraseType { Arabic, English}
@@ -427,6 +429,8 @@ namespace MyFirstOouiApp
         {
             string LTRMark = "\u200E";
             string RTLMark = "\u200F";
+            string sign = "";
+            if (!include) sign = "- ";
             string joined = "";
             foreach (Word w in words)
             {
@@ -434,11 +438,11 @@ namespace MyFirstOouiApp
             }
             if (type == PhraseType.English)
             {
-                 return LTRMark + joined.Substring(1);
+                 return LTRMark + sign + joined.Substring(1);
             }
             else
             {
-                return joined.Substring(1);
+                return sign + joined.Substring(1);
             }
         }
         public bool isLoneWord()
@@ -570,11 +574,13 @@ namespace MyFirstOouiApp
         public override string ToString()
         {
             string joined = "";
+            string sign = "";
+            if (!include) sign = "-_";
             foreach (WordReq wr in reqs)
             {
                 joined += "/" + wr.ToString();
             }
-            return joined.Substring(1);
+            return sign + joined.Substring(1);
         }
         public bool isSubwordType()
         {
@@ -881,13 +887,15 @@ namespace MyFirstOouiApp
         public override string ToString()
         {
             string RTLMark = "\u200F";
+            string sign = "";
+            if (!include) sign = "-";
             if (type == WordReqType.English)
             {
                 return req;
             }
             else
             {
-                return displayArabic(req) + RTLMark;
+                return sign + displayArabic(req) + RTLMark;
             }
         }
     }
@@ -895,18 +903,6 @@ namespace MyFirstOouiApp
     public enum StatType
     { 
         Verse, PhraseWord, SubWord
-    }
-    class VerseStat
-    {
-        public int surahs, verses;
-    }
-    class PhraseWordStat : VerseStat
-    {
-        public int phrases;
-    }
-    class SubWordStat : PhraseWordStat
-    {
-        public int subwords;
     }
     public class StatContent
     {
@@ -974,19 +970,6 @@ namespace MyFirstOouiApp
         string str (int i)
         {
             return i.ToString();
-        }
-    }
-    class Test
-    {
-        void test1()
-        {
-            VerseStat vstat = new SubWordStat();
-            //test2(new SubWordStat());
-            
-        }
-        void test2 ()
-        {
-
         }
     }
 }

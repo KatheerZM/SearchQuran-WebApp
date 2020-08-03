@@ -45,7 +45,7 @@
                     </Entry>
                 </Grid>
                 <Button Grid.Row="4" x:Name="find" Text="Find!" IsEnabled="False"
-                        FontSize="Default" TextColor="White" BackgroundColor="MediumBlue">
+                        FontSize="Default" TextColor="White" BackgroundColor="DarkGreen">
                     
                 </Button>
                 <Grid Grid.Row="5">
